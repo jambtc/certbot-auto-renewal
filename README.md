@@ -62,7 +62,7 @@ sudo crontab -e
 This will run the script every day at 2:00 AM and log output:
 
 ```bash
-0 2 * * * /bin/bash ~/check_certbot.sh >> /var/log/certbot_check.log 2>&1
+0 2 * * * /bin/bash ~/check_certbot.sh
 ```
 
 ## Log File Example

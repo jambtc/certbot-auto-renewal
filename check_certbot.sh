@@ -12,9 +12,14 @@ RENEWED=false
 # Log file
 LOG_FILE="/var/log/certbot_check.log"
 
+# Function to log messages to both file and screen
+log_message() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a $LOG_FILE
+}
+
 # Scrive l'orario di inizio nel log
-echo "=============================" >> $LOG_FILE
-echo "$(date '+%Y-%m-%d %H:%M:%S') - Inizio controllo certificati" >> $LOG_FILE
+log_message "============================="
+log_message "Inizio controllo certificati"
 
 # Controlla tutti i certificati
 $CERTBOT_CMD certificates | grep -A 10 "Certificate Name:" | while read -r line; do
@@ -26,10 +31,10 @@ $CERTBOT_CMD certificates | grep -A 10 "Certificate Name:" | while read -r line;
         CURRENT_SECONDS=$(date +%s)
         VALID_DAYS=$(( (EXPIRY_SECONDS - CURRENT_SECONDS) / 86400 ))
 
-        echo "$(date '+%Y-%m-%d %H:%M:%S') - Certificato per $DOMAIN valido per ancora $VALID_DAYS giorni." >> $LOG_FILE
+        log_message "Certificato per $DOMAIN valido per ancora $VALID_DAYS giorni."
 
         if [[ $VALID_DAYS -lt $THRESHOLD ]]; then
-            echo "$(date '+%Y-%m-%d %H:%M:%S') - 🔄 Rinnovo del certificato per $DOMAIN..." >> $LOG_FILE
+            log_message "🔄 Rinnovo del certificato per $DOMAIN..."
             sudo $CERTBOT_CMD renew --cert-name "$DOMAIN" --quiet
             RENEWED=true
         fi
@@ -38,10 +43,13 @@ done
 
 # Riavvia Apache solo se almeno un certificato è stato rinnovato
 if $RENEWED; then
-    echo "$(date '+%Y-%m-%d %H:%M:%S') - 🔄 Riavvio di Apache..." >> $LOG_FILE
+    log_message "🔄 Riavvio di Apache..."
     sudo systemctl restart apache2
 fi
 
+# avvisa dove recuperare il file di log
+log_message "Log salvato in : $LOG_FILE"
+
 # Scrive l'orario di fine nel log
-echo "$(date '+%Y-%m-%d %H:%M:%S') - Controllo completato." >> $LOG_FILE
-echo "=============================" >> $LOG_FILE
+log_message "Controllo completato."
+log_message "============================="
